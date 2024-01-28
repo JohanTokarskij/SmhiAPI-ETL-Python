@@ -26,6 +26,14 @@ def create_excel_headers(sheet):
     sheet["G1"] = "Precipitation Category"
     sheet["H1"] = "Precipitation in mm"
 
+def clear_or_create_sheet(workbook, sheet_name):
+    if sheet_name in workbook.sheetnames:
+        sheet = workbook[sheet_name]
+        sheet.delete_rows(1, sheet.max_row)
+    else:
+        sheet = workbook.create_sheet(title=sheet_name)
+    return sheet
+
 def get_coordinates():
     geolocator = Nominatim(user_agent="GeocodingApp")
     location = geolocator.geocode(input("Enter city name: "))

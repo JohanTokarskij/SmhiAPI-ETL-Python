@@ -1,7 +1,7 @@
 import datetime
 import os
 import requests
-from helper_functions import create_excel_headers
+from helper_functions import create_excel_headers, clear_or_create_sheet
 import openpyxl
 
 EXCEL_FILE = 'Weather_data.xlsx'
@@ -109,26 +109,19 @@ def transport_smhi_data(data, location):
 # Load data into Excel #
 def load_excel_data(data, location):
     capitalized_location = location.capitalize()
+
     if os.path.exists(EXCEL_FILE):
         workbook = openpyxl.load_workbook(EXCEL_FILE)
-
-        if capitalized_location in workbook.sheetnames:
-            sheet = workbook[capitalized_location]
-        else:
-            sheet = workbook.create_sheet(title=capitalized_location)
-            create_excel_headers(sheet)
-
     else:
         workbook = openpyxl.Workbook()
-        sheet = workbook.active
-        sheet.title = capitalized_location
-        create_excel_headers(sheet)
+
+    sheet = clear_or_create_sheet(workbook, capitalized_location)
+    create_excel_headers(sheet)
 
     for value in data: 
         sheet.append(value)
     
     workbook.save(EXCEL_FILE)
-
 
 
 #get_coordinates()
