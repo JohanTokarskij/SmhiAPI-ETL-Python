@@ -1,30 +1,22 @@
 import os
+from time import sleep
 from geopy.geocoders import Nominatim
+from geopy.exc import GeocoderTimedOut, GeocoderServiceError
+import openpyxl
+from openpyxl.styles import Border, Side, PatternFill
 
 
 # Helper functions #
-def clear_screen():
-        os.system('cls' if os.name == 'nt' else 'clear')
+def clear_screen(sleep_time=1):
+    sleep(sleep_time)
+    os.system('cls' if os.name == 'nt' else 'clear')
 
-def wait_for_keypress():
+
+def wait_for_keypress(sleep_time=0):
     while True:
         input('\nPress "Enter" to continue...')
+        sleep(sleep_time)
         break
-
-def create_excel_headers(sheet):
-    columns = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
-
-    for column_letter in columns:
-        sheet.column_dimensions[column_letter].width = 20
-
-    sheet["A1"] = "Fetched"
-    sheet["B1"] = "Latitude"
-    sheet["C1"] = "Longitude"
-    sheet["D1"] = "Date"
-    sheet["E1"] = "Hour"
-    sheet["F1"] = "Temperature"
-    sheet["G1"] = "Precipitation Category"
-    sheet["H1"] = "Precipitation in mm"
 
 def clear_or_create_sheet(workbook, sheet_name):
     if sheet_name in workbook.sheetnames:
@@ -34,19 +26,55 @@ def clear_or_create_sheet(workbook, sheet_name):
         sheet = workbook.create_sheet(title=sheet_name)
     return sheet
 
+
+def create_excel_headers(sheet):
+    headers = ["Fetched", "Latitude", "Longitude", "Date", "Hour",
+               "Temperature", "Precipitation Category", "Precipitation in mm"]
+
+    thin_border = Border(
+        left=Side(style='thin'),
+        right=Side(style='thin'),
+        top=Side(style='thin'),
+        bottom=Side(style='thin')
+    )
+
+    grey_fill = PatternFill(start_color='00CCCCCC',
+                            end_color='00CCCCCC', fill_type='solid')
+
+    for col, header in enumerate(headers, start=1):
+        cell = sheet.cell(row=1, column=col)
+        cell.value = header
+        cell.border = thin_border
+        cell.fill = grey_fill
+        sheet.column_dimensions[openpyxl.utils.get_column_letter(
+            col)].width = 20
+
+
 def get_coordinates():
-    geolocator = Nominatim(user_agent="GeocodingApp")
-    location = geolocator.geocode(input("Enter city name: "))
+    geolocator = Nominatim(user_agent='GeocodingApp')
+    while True:
+        user_input = input(
+            'Enter city name(type "exit" to exit application): ')
+        if user_input.lower() == 'exit':
+            print('\nAction cancelled.')
+            clear_screen()
+            return None
 
-    latitude = None
-    longitude = None
+        try:
+            location = geolocator.geocode(user_input)
 
-    if location:
-        latitude = round(location.latitude, 6)
-        longitude = round(location.longitude, 6)
-        """ print(f'Coordinates for {location[0]} are: \n Latitude: {
-              latitude}, Longitude: {longitude}\n') """
-        #print(type(location[0].split(',')[0]))
-        return latitude, longitude, location[0].split(',')[0]
-    else:
-        print('Geocoding failed. Check your input or try a different location.')
+            latitude = None
+            longitude = None
+
+            if location:
+                latitude, longitude = round(
+                    location.latitude, 6), round(location.longitude, 6)
+                return latitude, longitude, location[0].split(',')[0]
+            else:
+                print('Geocoding failed. Check your input or try a different location.')
+        except GeocoderTimedOut:
+            print("Geocoder service timed out. Please try again.")
+        except GeocoderServiceError:
+            print("Geocoder service error. Please try again later.")
+        except Exception as e:
+            print(f"An unexpected error occurred: {e}")

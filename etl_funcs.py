@@ -1,15 +1,13 @@
 import datetime
 import os
 import requests
-from helper_functions import create_excel_headers, clear_or_create_sheet
+from helper_functions import create_excel_headers, clear_or_create_sheet, wait_for_keypress
+from geopy.geocoders import Nominatim
+from geopy.exc import GeocoderTimedOut, GeocoderServiceError
 import openpyxl
+from time import sleep
 
-EXCEL_FILE = 'Weather_data.xlsx'
-latitude = 59.3099
-longitude = 18.0215
-
-
-
+EXCEL_FILE = 'Weather_dashboard.xlsx'
 PRECIPITATION_CATEGORIES = {0: 'No precipitation',
                             1: 'Snow',
                             2: 'Snow and rain',
@@ -19,13 +17,14 @@ PRECIPITATION_CATEGORIES = {0: 'No precipitation',
                             6: 'Freezing drizzle'}
 
 # Extract data from SMHI Api #
-def extract_smhi_data(latitude, longitude, location):
+def extract_smhi_data(latitude, longitude):
     """
     Fetches data from the SMHI API and extracts temperature and precipitation values for the next 24 hours for a given longitude and latitude.
 
     Returns:
         response.json()
     Raises:
+        ValueError: If the latitude and longitude are outside the valid geographic area of SMHI.
         Exception: If an incorrect status code is returned from the API call.
     """
 
@@ -33,21 +32,22 @@ def extract_smhi_data(latitude, longitude, location):
         response = requests.get(
             f'https://opendata-download-metfcst.smhi.se/api/category/pmp3g/version/2/geotype/point/lon/{longitude}/lat/{latitude}/data.json')
 
-        if response.status_code != 200:
-            raise Exception(f'Error fetching data: HTTP status code {
-                            response.status_code}')
+        if response.status_code == 404:
+            raise ValueError('The provided location are outside the valid geographic area of SMHI.')
+        elif response.status_code != 200:
+            raise Exception(f'Error fetching data: HTTP status code {response.status_code}')
 
-        data = response.json()
-        return data, location
+        return response.json()
 
     except requests.RequestException as e:
         raise Exception(f'Error during API request: {e}')
-
+    except ValueError:
+        raise
     except Exception as e:
-        raise Exception(f'An error occurred: {e}')
+        raise Exception(f'An unexpected error occurred: {e}')
 
 # Transform data #
-def transport_smhi_data(data, location):
+def transform_smhi_data(data, latitude, longitude,):
     """
     Transforms and returns fetched weather data into a structured format.
 
@@ -97,8 +97,8 @@ def transport_smhi_data(data, location):
                     formatted_rounded_start_time = rounded_start_time.strftime(
                         format_string)
                     break
-        print(transformed_data)
-        return transformed_data, location
+        return transformed_data
+    
     except KeyError as ke:
         raise ValueError(f"Missing key in input data: {ke}")
     except TypeError as te:
@@ -107,22 +107,72 @@ def transport_smhi_data(data, location):
         raise Exception(f"An unexpected error occurred: {e}")
 
 # Load data into Excel #
-def load_excel_data(data, location):
-    capitalized_location = location.capitalize()
+def load_data_to_excel(data, location):
+    try:
+        capitalized_location = location.capitalize()
 
-    if os.path.exists(EXCEL_FILE):
-        workbook = openpyxl.load_workbook(EXCEL_FILE)
-    else:
-        workbook = openpyxl.Workbook()
+        if os.path.exists(EXCEL_FILE):
+            workbook = openpyxl.load_workbook(EXCEL_FILE)
+        else:
+            workbook = openpyxl.Workbook()
+            print('\nExcel dashboard has been created.')
+            sleep(0.75)
+            workbook.remove(workbook['Sheet'])
 
-    sheet = clear_or_create_sheet(workbook, capitalized_location)
-    create_excel_headers(sheet)
+        sheet = clear_or_create_sheet(workbook, capitalized_location)
+        create_excel_headers(sheet)
 
-    for value in data: 
-        sheet.append(value)
-    
-    workbook.save(EXCEL_FILE)
+        for value in data: 
+            sheet.append(value)
+        
+        workbook.save(EXCEL_FILE)
 
+    except FileNotFoundError:
+        print(f"Error: The file {EXCEL_FILE} was not found.")
+    except PermissionError:
+        print(f"Error: Permission denied when accessing {EXCEL_FILE}.")
+    except openpyxl.utils.exceptions.InvalidFileException:
+        print(f"Error: The file {EXCEL_FILE} is not a valid Excel file.")
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
 
-#get_coordinates()
+def etl(latitude, longitude, location):
+    data = extract_smhi_data(latitude, longitude)
+    transformed_data = transform_smhi_data(data, latitude, longitude)
+    load_data_to_excel(transformed_data, location)
+
+# MENU: 2. Update dashboard with the new data #
+def update_dashboard(excel_file_path, etl_func):
+    """
+    Updates the dashboard with new data for each location listed in the Excel file.
+
+    Args:
+    excel_file_path (str): Path to the Excel file.
+    etl_func (function): ETL function to execute for each location.
+    """
+    geolocator = Nominatim(user_agent='GeocodingApp')
+
+    try:
+        workbook = openpyxl.load_workbook(excel_file_path)
+        sheet_names = workbook.sheetnames
+
+        for location_name in sheet_names:
+            try:
+                location = geolocator.geocode(location_name)
+                if location:
+                    latitude, longitude = round(location.latitude, 6), round(location.longitude, 6)
+                    etl_func(latitude, longitude, location_name)
+                else:
+                    print(f'Location not found for {location_name}.')
+            except GeocoderTimedOut:
+                print("Geocoder service timed out.")
+            except GeocoderServiceError:
+                print("Geocoder service error.")
+            except Exception as e:
+                print(f"An unexpected error occurred: {e}")
+
+    except Exception as e:
+        print(f"An error occurred while updating the dashboard: {e}")
+        wait_for_keypress()
+
 
