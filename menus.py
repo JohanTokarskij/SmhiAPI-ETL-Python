@@ -20,7 +20,7 @@ def main_menu():
                 latitude, longitude, location = coordinates
                 try:
                     etl(latitude, longitude, location)
-                    print('\nData successfully added.')
+                    #print('\nData successfully added.')
                     clear_screen()
                 except ValueError as ve:
                     print(f'\nError: {ve}')

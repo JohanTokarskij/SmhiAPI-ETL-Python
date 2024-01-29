@@ -19,12 +19,14 @@ def wait_for_keypress(sleep_time=0):
         break
 
 def clear_or_create_sheet(workbook, sheet_name):
+    is_new_sheet = False
     if sheet_name in workbook.sheetnames:
         sheet = workbook[sheet_name]
         sheet.delete_rows(1, sheet.max_row)
     else:
         sheet = workbook.create_sheet(title=sheet_name)
-    return sheet
+        is_new_sheet = True
+    return sheet, is_new_sheet
 
 
 def create_excel_headers(sheet):

@@ -15,7 +15,7 @@ PRECIPITATION_CATEGORIES = {0: 'No precipitation',
                             4: 'Drizzle',
                             5: 'Freezing rain',
                             6: 'Freezing drizzle'}
-
+# MENU: 1.Add new location to Excel-dashboard #
 # Extract data from SMHI Api #
 def extract_smhi_data(latitude, longitude):
     """
@@ -82,8 +82,7 @@ def transform_smhi_data(data, latitude, longitude,):
                 if formatted_rounded_start_time == ' '.join(observation['validTime'].split('T'))[:-4]:
                     fetched = datetime.datetime.now().strftime('%Y-%m-%d %H:%M')
                     date = formatted_rounded_start_time.split(' ')[0]
-                    hour = f'{int(formatted_rounded_start_time.split(
-                        " ")[1].split(":")[0]):02d}:00'
+                    hour = f'{int(formatted_rounded_start_time.split(" ")[1].split(":")[0]):02d}:00'
                     temperature = [param['values'][0]
                                 for param in observation['parameters'] if param['name'] == 't'][0]
                     precipitation_category_value = [
@@ -115,15 +114,15 @@ def load_data_to_excel(data, location):
             workbook = openpyxl.load_workbook(EXCEL_FILE)
         else:
             workbook = openpyxl.Workbook()
-            print('\nExcel dashboard has been created.')
-            sleep(0.75)
             workbook.remove(workbook['Sheet'])
 
-        sheet = clear_or_create_sheet(workbook, capitalized_location)
+        sheet, is_new_sheet = clear_or_create_sheet(workbook, capitalized_location)
         create_excel_headers(sheet)
 
         for value in data: 
             sheet.append(value)
+        
+        print(f'\nExcel dashboard has been {"created" if is_new_sheet else f"updated with data for {capitalized_location}" }.')
         
         workbook.save(EXCEL_FILE)
 
