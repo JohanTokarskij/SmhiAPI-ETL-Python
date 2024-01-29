@@ -31,7 +31,7 @@ def main_menu():
                     print(f'\nAn unexpected error occurred: {e}')
                     wait_for_keypress()
 
-        elif choice == "2. Update dashboard with the new data":
+        elif choice == "2. Update whole dashboard with the new data":
             try:
                 update_dashboard(EXCEL_FILE, etl)
                 wait_for_keypress()

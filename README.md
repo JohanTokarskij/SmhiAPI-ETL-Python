@@ -18,6 +18,9 @@ This project was developed and tested using Python 3.12. To set up and run this 
 
 1. Clone the repository: `git clone [repository URL]`
 2. Navigate to the project directory: `cd [project directory]`
+3. To ensure proper isolation of project dependencies, it is required to create and activate a virtual environment before running this app. Follow these steps:
+    - Create a new virtual environment: `python -m venv venv`
+    - Activate the virtual environment: `venv\Scripts\activate` on Windows and `source venv/bin/activate` on Linux/macOS
 3. Install the required dependencies: `pip install -r requirements.txt`
 
 ## Usage
