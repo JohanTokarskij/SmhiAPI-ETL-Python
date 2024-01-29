@@ -1,6 +1,5 @@
 import os
 from time import sleep
-import keyboard
 from geopy.geocoders import Nominatim
 from geopy.exc import GeocoderTimedOut, GeocoderServiceError
 import openpyxl
