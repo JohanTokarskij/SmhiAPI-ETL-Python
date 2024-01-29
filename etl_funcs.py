@@ -5,7 +5,6 @@ from helper_functions import create_excel_headers, clear_or_create_sheet, wait_f
 from geopy.geocoders import Nominatim
 from geopy.exc import GeocoderTimedOut, GeocoderServiceError
 import openpyxl
-from time import sleep
 
 EXCEL_FILE = 'Weather_dashboard.xlsx'
 PRECIPITATION_CATEGORIES = {0: 'No precipitation',
@@ -15,6 +14,7 @@ PRECIPITATION_CATEGORIES = {0: 'No precipitation',
                             4: 'Drizzle',
                             5: 'Freezing rain',
                             6: 'Freezing drizzle'}
+
 # MENU: 1.Add new location to Excel-dashboard #
 # Extract data from SMHI Api #
 def extract_smhi_data(latitude, longitude):
@@ -169,6 +169,8 @@ def update_dashboard(excel_file_path, etl_func):
                 print("Geocoder service error.")
             except Exception as e:
                 print(f"An unexpected error occurred: {e}")
+        
+        print('\nDashboard updated successfully.')
 
     except Exception as e:
         print(f"An error occurred while updating the dashboard: {e}")

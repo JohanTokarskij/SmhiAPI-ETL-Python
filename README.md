@@ -6,8 +6,8 @@ This project is a Python-based application that fetches weather data for specifi
 
 The application provides a menu-driven interface allowing users to:
 
-1. **Add New Location to Excel-Dashboard**: Fetches weather data for a new location and saves it to the Excel dashboard "Weather_dashboard.xlsx" in the root directory of the project.
-2. **Update Dashboard with New Data**: Updates the existing dashboard with the latest weather data for all listed locations.
+1. **Add/Update Locations in Dashboard**: Fetches weather data for a new location and saves it to the Excel dashboard "Weather_dashboard.xlsx" in the root directory of the project. If the location already exists in the dashbord, it is updated with a new data.
+2. **Update whole dashboard with the new data**: Updates all existing locations in dashboard with the latest weather data.
 3. **Exit**: Exits the application.
 
 The result is an Excel dashboard that visually presents the weather forecast data, including temperature, precipitation, and other relevant details.

@@ -1,5 +1,6 @@
 import os
 from time import sleep
+import keyboard
 from geopy.geocoders import Nominatim
 from geopy.exc import GeocoderTimedOut, GeocoderServiceError
 import openpyxl
@@ -56,7 +57,7 @@ def get_coordinates():
     geolocator = Nominatim(user_agent='GeocodingApp')
     while True:
         user_input = input(
-            'Enter city name(type "exit" to exit application): ')
+            'Enter city name(press ESC to exit): ')
         if user_input.lower() == 'exit':
             print('\nAction cancelled.')
             clear_screen()
