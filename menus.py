@@ -12,8 +12,8 @@ def main_menu():
         choice = questionary.select(
             "Select an option:",
             choices=[
-                "1. Add/Update Locations in Dashboard",
-                "2. Update whole dashboard with the new data",
+                "1. Add/Update Location in Dashboard",
+                "2. Update All Locations in Dashboard",
                 "3. Exit"
             ]).ask()
 
@@ -31,7 +31,7 @@ def main_menu():
                     print(f'\nAn unexpected error occurred: {e}')
                     wait_for_keypress()
 
-        elif choice == "2. Update whole dashboard with the new data":
+        elif choice == "2. Update All Locations in Dashboard":
             try:
                 update_dashboard(EXCEL_FILE, etl)
                 wait_for_keypress()
