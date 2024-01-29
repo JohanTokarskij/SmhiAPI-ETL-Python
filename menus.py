@@ -1,5 +1,5 @@
 from etl_funcs import etl, update_dashboard, EXCEL_FILE
-from helper_functions import get_coordinates, clear_screen, wait_for_keypress
+from helper_funcs import get_coordinates, clear_screen, wait_for_keypress
 import questionary
 
 def main_menu():
@@ -17,7 +17,7 @@ def main_menu():
                 "3. Exit"
             ]).ask()
 
-        if choice == "1. Add/Update Locations in Dashboard":
+        if choice == "1. Add/Update Location in Dashboard":
             coordinates = get_coordinates()
             if coordinates:
                 latitude, longitude, location = coordinates

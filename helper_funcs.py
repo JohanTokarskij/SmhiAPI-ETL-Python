@@ -56,7 +56,7 @@ def get_coordinates():
     geolocator = Nominatim(user_agent='GeocodingApp')
     while True:
         user_input = input(
-            'Enter city name(press ESC to exit): ')
+            'Enter city name(type "exit" to exit): ')
         if user_input.lower() == 'exit':
             print('\nAction cancelled.')
             clear_screen()

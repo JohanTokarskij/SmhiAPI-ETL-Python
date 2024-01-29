@@ -1,7 +1,7 @@
 import datetime
 import os
 import requests
-from helper_functions import create_excel_headers, clear_or_create_sheet, wait_for_keypress
+from helper_funcs import create_excel_headers, clear_or_create_sheet, wait_for_keypress
 from geopy.geocoders import Nominatim
 from geopy.exc import GeocoderTimedOut, GeocoderServiceError
 import openpyxl
@@ -21,11 +21,10 @@ def extract_smhi_data(latitude, longitude):
     """
     Fetches data from the SMHI API and extracts temperature and precipitation values for the next 24 hours for a given longitude and latitude.
 
+    Errors encountered during the API request or data processing are printed to the console.
+
     Returns:
-        response.json()
-    Raises:
-        ValueError: If the latitude and longitude are outside the valid geographic area of SMHI.
-        Exception: If an incorrect status code is returned from the API call.
+        dict: The response from the API in JSON format, or None if an error occurs.
     """
 
     try:
@@ -33,26 +32,32 @@ def extract_smhi_data(latitude, longitude):
             f'https://opendata-download-metfcst.smhi.se/api/category/pmp3g/version/2/geotype/point/lon/{longitude}/lat/{latitude}/data.json')
 
         if response.status_code == 404:
-            raise ValueError('The provided location are outside the valid geographic area of SMHI.')
+            print('The provided location is outside the valid geographic area of SMHI.')
+            return None        
         elif response.status_code != 200:
-            raise Exception(f'Error fetching data: HTTP status code {response.status_code}')
-
+            print(f'Error fetching data: HTTP status code {response.status_code}')
+            return None
+        
         return response.json()
 
     except requests.RequestException as e:
-        raise Exception(f'Error during API request: {e}')
+        print(f'Error during API request: {e}')
+        return None
     except ValueError:
         raise
     except Exception as e:
-        raise Exception(f'An unexpected error occurred: {e}')
+        print(f'An unexpected error occurred: {e}')
+        return None
 
 # Transform data #
-def transform_smhi_data(data, latitude, longitude,):
+def transform_smhi_data(data, latitude, longitude):
     """
     Transforms and returns fetched weather data into a structured format.
 
     Parameters:
     data (dict): A dictionary containing weather data from SMHI.
+    latitude (float): Latitude of the observation location (in decimal degrees).
+    longitude (float): Longitude of the observation location (in decimal degrees).
 
     Returns:
     List[List[Union[str, int, float]]]: A list of weather data where each sublist contains:
@@ -65,10 +70,12 @@ def transform_smhi_data(data, latitude, longitude,):
         6. 'precipitation_category': Description of precipitation type (e.g., 'rain', 'snow').
         7. 'precipitation_mm': Amount of precipitation in mm.
 
-    Raises:
-    ValueError: If the input data is not in the expected format or missing required information.
+    Errors:
+    Errors encountered during the data transformation are printed to the console and an empty list is returned.
     """
-    
+    if not data:
+        print("No data available to transform.")
+        return None
     try:
         transformed_data = []
         rounded_start_time = datetime.datetime.now() + datetime.timedelta(minutes=60 -
@@ -99,14 +106,19 @@ def transform_smhi_data(data, latitude, longitude,):
         return transformed_data
     
     except KeyError as ke:
-        raise ValueError(f"Missing key in input data: {ke}")
+        print(f"Missing key in input data: {ke}")
+        return []
     except TypeError as te:
-        raise ValueError(f"Invalid data type in input: {te}")
+        print(f"Invalid data type in input: {te}")
+        return []
     except Exception as e:
-        raise Exception(f"An unexpected error occurred: {e}")
+        print(f"An unexpected error occurred: {e}")
+        return []
 
 # Load data into Excel #
 def load_data_to_excel(data, location):
+    if not data:
+        return None
     try:
         capitalized_location = location.capitalize()
 
