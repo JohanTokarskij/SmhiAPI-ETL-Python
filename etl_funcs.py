@@ -74,13 +74,13 @@ def transform_smhi_data(data, latitude, longitude):
     Errors encountered during the data transformation are printed to the console and an empty list is returned.
     """
     if not data:
-        print("No data available to transform.")
+        print('No data available to transform.')
         return None
     try:
         transformed_data = []
         rounded_start_time = datetime.datetime.now() + datetime.timedelta(minutes=60 -
                                                                         datetime.datetime.now().minute)
-        format_string = "%Y-%m-%d %H:%M"
+        format_string = '%Y-%m-%d %H:%M'
         formatted_rounded_start_time = rounded_start_time.strftime(
             format_string)
 
@@ -106,13 +106,13 @@ def transform_smhi_data(data, latitude, longitude):
         return transformed_data
     
     except KeyError as ke:
-        print(f"Missing key in input data: {ke}")
+        print(f'Missing key in input data: {ke}')
         return []
     except TypeError as te:
-        print(f"Invalid data type in input: {te}")
+        print(f'Invalid data type in input: {te}')
         return []
     except Exception as e:
-        print(f"An unexpected error occurred: {e}")
+        print(f'An unexpected error occurred: {e}')
         return []
 
 # Load data into Excel #
@@ -139,13 +139,13 @@ def load_data_to_excel(data, location):
         workbook.save(EXCEL_FILE)
 
     except FileNotFoundError:
-        print(f"Error: The file {EXCEL_FILE} was not found.")
+        print(f'Error: The file {EXCEL_FILE} was not found.')
     except PermissionError:
-        print(f"Error: Permission denied when accessing {EXCEL_FILE}.")
+        print(f'Error: Permission denied when accessing {EXCEL_FILE}.')
     except openpyxl.utils.exceptions.InvalidFileException:
-        print(f"Error: The file {EXCEL_FILE} is not a valid Excel file.")
+        print(f'Error: The file {EXCEL_FILE} is not a valid Excel file.')
     except Exception as e:
-        print(f"An unexpected error occurred: {e}")
+        print(f'An unexpected error occurred: {e}')
 
 def etl(latitude, longitude, location):
     data = extract_smhi_data(latitude, longitude)
@@ -176,16 +176,16 @@ def update_dashboard(excel_file_path, etl_func):
                 else:
                     print(f'Location not found for {location_name}.')
             except GeocoderTimedOut:
-                print("Geocoder service timed out.")
+                print('Geocoder service timed out.')
             except GeocoderServiceError:
-                print("Geocoder service error.")
+                print('Geocoder service error.')
             except Exception as e:
-                print(f"An unexpected error occurred: {e}")
+                print(f'An unexpected error occurred: {e}')
         
         print('\nDashboard updated successfully.')
 
     except Exception as e:
-        print(f"An error occurred while updating the dashboard: {e}")
+        print(f'An error occurred while updating the dashboard: {e}')
         wait_for_keypress()
 
 

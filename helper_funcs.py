@@ -75,8 +75,8 @@ def get_coordinates():
             else:
                 print('Geocoding failed. Check your input or try a different location.')
         except GeocoderTimedOut:
-            print("Geocoder service timed out. Please try again.")
+            print('Geocoder service timed out. Please try again.')
         except GeocoderServiceError:
-            print("Geocoder service error. Please try again later.")
+            print('Geocoder service error. Please try again later.')
         except Exception as e:
-            print(f"An unexpected error occurred: {e}")
+            print(f'An unexpected error occurred: {e}')
