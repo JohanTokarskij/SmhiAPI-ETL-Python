@@ -7,19 +7,30 @@ from geopy.exc import GeocoderTimedOut, GeocoderServiceError
 import openpyxl
 
 EXCEL_FILE = 'Weather_dashboard.xlsx'
+# The snow1g API reports 'predominant_precipitation_type_at_surface' using the
+# WMO/GRIB2 code table 4.201, which replaces the 0-6 'pcat' scale of pmp3g v2.
 PRECIPITATION_CATEGORIES = {0: 'No precipitation',
-                            1: 'Snow',
-                            2: 'Snow and rain',
-                            3: 'Rain',
-                            4: 'Drizzle',
-                            5: 'Freezing rain',
-                            6: 'Freezing drizzle'}
+                            1: 'Rain',
+                            2: 'Thunderstorm',
+                            3: 'Freezing rain',
+                            4: 'Mixed/ice',
+                            5: 'Snow',
+                            6: 'Wet snow',
+                            7: 'Rain and snow',
+                            8: 'Ice pellets',
+                            9: 'Graupel',
+                            10: 'Hail',
+                            11: 'Drizzle',
+                            12: 'Freezing drizzle',
+                            13: 'Hail (less than 5 mm)',
+                            14: 'Hail (5 mm or more)',
+                            255: 'Missing'}
 
 # MENU: 1.Add new location to Excel-dashboard #
 # Extract data from SMHI Api #
 def extract_smhi_data(latitude, longitude):
     """
-    Fetches data from the SMHI API and extracts temperature and precipitation values for the next 24 hours for a given longitude and latitude.
+    Fetches data from the SMHI snow1g (version 1) forecast API for a given longitude and latitude.
 
     Errors encountered during the API request or data processing are printed to the console.
 
@@ -29,7 +40,7 @@ def extract_smhi_data(latitude, longitude):
 
     try:
         response = requests.get(
-            f'https://opendata-download-metfcst.smhi.se/api/category/pmp3g/version/2/geotype/point/lon/{longitude}/lat/{latitude}/data.json')
+            f'https://opendata-download-metfcst.smhi.se/api/category/snow1g/version/1/geotype/point/lon/{longitude}/lat/{latitude}/data.json')
 
         if response.status_code == 404:
             print('The provided location is outside the valid geographic area of SMHI.')
@@ -67,8 +78,8 @@ def transform_smhi_data(data, latitude, longitude):
         3. 'date': Date of the weather data ('YYYY-MM-DD').
         4. 'hour': Hour of the day when data was observed (formatted as 'HH:00').
         5. 'temperature': Temperature at the time of observation (in °C).
-        6. 'precipitation_category': Description of precipitation type (e.g., 'rain', 'snow').
-        7. 'precipitation_mm': Amount of precipitation in mm.
+        6. 'precipitation_category': Description of precipitation type (e.g., 'Rain', 'Snow').
+        7. 'precipitation_mm': Median precipitation amount in mm.
 
     Errors:
     Errors encountered during the data transformation are printed to the console and an empty list is returned.
@@ -78,31 +89,35 @@ def transform_smhi_data(data, latitude, longitude):
         return None
     try:
         transformed_data = []
-        rounded_start_time = datetime.datetime.now() + datetime.timedelta(minutes=60 -
-                                                                        datetime.datetime.now().minute)
-        format_string = '%Y-%m-%d %H:%M'
-        formatted_rounded_start_time = rounded_start_time.strftime(
-            format_string)
 
-        for _ in range(24):
-            for observation in data['timeSeries']:
-                if formatted_rounded_start_time == ' '.join(observation['validTime'].split('T'))[:-4]:
-                    fetched = datetime.datetime.now().strftime('%Y-%m-%d %H:%M')
-                    date = formatted_rounded_start_time.split(' ')[0]
-                    hour = f'{int(formatted_rounded_start_time.split(" ")[1].split(":")[0]):02d}:00'
-                    temperature = [param['values'][0]
-                                for param in observation['parameters'] if param['name'] == 't'][0]
-                    precipitation_category_value = [
-                        param['values'][0] for param in observation['parameters'] if param['name'] == 'pcat'][0]
-                    precipitation_category = PRECIPITATION_CATEGORIES[precipitation_category_value]
-                    precipitation_mm = [param['values'][0] for param in observation['parameters'] if param['name'] == 'pmedian'][0]
-                    transformed_data.append([fetched, latitude, longitude, date,
-                                            hour, temperature, precipitation_category, precipitation_mm])
+        # The API timestamps the forecast in UTC, so the hours to look for are
+        # built in UTC and only converted to local time for the reported values.
+        forecast_by_time = {
+            datetime.datetime.strptime(observation['time'], '%Y-%m-%dT%H:%M:%SZ')
+            .replace(tzinfo=datetime.timezone.utc): observation['data']
+            for observation in data['timeSeries']}
 
-                    rounded_start_time += datetime.timedelta(hours=1)
-                    formatted_rounded_start_time = rounded_start_time.strftime(
-                        format_string)
-                    break
+        next_utc_hour = datetime.datetime.now(datetime.timezone.utc).replace(
+            minute=0, second=0, microsecond=0) + datetime.timedelta(hours=1)
+        fetched = datetime.datetime.now().strftime('%Y-%m-%d %H:%M')
+
+        for hours_ahead in range(24):
+            utc_time = next_utc_hour + datetime.timedelta(hours=hours_ahead)
+            values = forecast_by_time.get(utc_time)
+            if values is None:
+                continue
+
+            local_time = utc_time.astimezone()
+            date = local_time.strftime('%Y-%m-%d')
+            hour = local_time.strftime('%H:00')
+            temperature = values['air_temperature']
+            precipitation_category_value = values['predominant_precipitation_type_at_surface']
+            precipitation_category = PRECIPITATION_CATEGORIES.get(
+                precipitation_category_value, 'Unknown')
+            precipitation_mm = values['precipitation_amount_median']
+            transformed_data.append([fetched, latitude, longitude, date,
+                                    hour, temperature, precipitation_category, precipitation_mm])
+
         return transformed_data
     
     except KeyError as ke:
